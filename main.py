@@ -597,21 +597,20 @@ load_dotenv()
 OUT_FOLDER_PATH_USERS = os.getenv("PATH_USERS")
 PATH_USER_CHECK = os.getenv("PATH_USERS_CHECK")
 OUT_FOLDER_PATH_FACES = os.getenv("PATH_FACES")
-OUT_FOLDER_PATH_PROFILES = 'C:/Users/willi/Desktop/IA_Project_Autenticacion/database/profiles'
+OUT_FOLDER_PATH_PROFILES = os.getenv("PATH_PROFILES")
 
 # Read Img
-img_check = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/check.png')
+img_check = cv2.imread(os.getenv("PATH_ICON_CHECK"))
 img_check = cv2.cvtColor(img_check, cv2.COLOR_RGB2BGR)
-img_step = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/mvp.png')  # mvp
+img_step = cv2.imread(os.getenv("PATH_ICON_MVP"))  # mvp
 img_step = cv2.cvtColor(img_step, cv2.COLOR_RGB2BGR)
-img_step0 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso0.png')  # Step 0
+img_step0 = cv2.imread(os.getenv("PATH_ICON_STEP0"))  # Step 0
 img_step0 = cv2.cvtColor(img_step0, cv2.COLOR_RGB2BGR)
-img_step1 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso1.png')  # Step 1
+img_step1 = cv2.imread(os.getenv("PATH_ICON_STEP1"))  # Step 1
 img_step1 = cv2.cvtColor(img_step1, cv2.COLOR_RGB2BGR)
-img_step2 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso2.png')  # Step 2
+img_step2 = cv2.imread(os.getenv("PATH_ICON_STEP2"))  # Step 2
 img_step2 = cv2.cvtColor(img_step2, cv2.COLOR_RGB2BGR)
-img_livenesscheck = cv2.imread(
-    'C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Livenesscheck1.png')  # LivenessCheck
+img_livenesscheck = cv2.imread(os.getenv("PATH_LIVENESS_CHECK"))  # LivenessCheck
 img_livenesscheck = cv2.cvtColor(img_livenesscheck, cv2.COLOR_RGB2BGR)
 
 # Variables
@@ -665,7 +664,7 @@ background = Label(image=img_background, text="Inicio")
 background.place(x=0, y=0, relheight=1, relwidth=1)
 
 # Profile Background
-imagenbc = PhotoImage(file="C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Perfil.png")
+imagenbc = PhotoImage(file=os.getenv("PATH_BACKGROUND_PROFILE"))
 
 # Manejo de inputs de registro (codEstudiante, nombreEstudiante, profesion)
 # codEstudiante
