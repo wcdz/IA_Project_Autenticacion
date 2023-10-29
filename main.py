@@ -12,11 +12,32 @@ import math
 import re
 
 
+def codeFace(images):
+    # List
+    lista_cod = []
+
+    for img in images:
+        # Color
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img
+        cod = fr.face_encodings(img)[0]
+        lista_cod.append(cod)  # save list
+
+    return lista_cod
+
+
 def closeWindow():
     global step, conteo
     step = 0
     conteo = 0
     pantalla2.destroy()
+
+
+def closeWindow2():
+    global step, conteo
+    step = 0
+    conteo = 0
+    pantalla3.destroy()
 
 
 # Funcion LOG
@@ -248,8 +269,10 @@ def registroBiometrico():
                                             # img check liveness
                                             alli, anli, c = img_livenesscheck.shape
                                             frame[50:50 + alli, 50:50 + anli] = img_livenesscheck
+                                            # messagebox.showinfo("Registro", "Registro satisfactorio")
 
                                     close = pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
+                                    # pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
 
                                     # Circle - Solo es de prueba
                             # cv2.circle(frame, (x1, y1), 2, (255, 0, 0), cv2.FILLED)
@@ -271,6 +294,273 @@ def registroBiometrico():
 def lanzarMVP():
     global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images
 
+    # DB Faces
+    images = []
+    clases = []
+
+    lista = os.listdir(OUT_FOLDER_PATH_FACES)
+
+    # Leer rostros
+    for l in lista:
+        imgdb = cv2.imread(f"{OUT_FOLDER_PATH_FACES}/{l}")
+        # Save Img DB
+        images.append(imgdb)
+        # name img
+        clases.append(os.path.splitext(l)[0])
+
+    # Face Code
+    face_code = codeFace(images)
+    # print(face_code)
+
+    # pantalla3
+    pantalla3 = Toplevel(pantalla)
+    pantalla3.title("Kikness | Control de acceso")
+    pantalla3.geometry("1280x720")
+
+    # nuevo lbl de video
+    lblVideo = Label(pantalla3)
+    lblVideo.place(x=0, y=0)
+
+    # videocaptura
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap.set(3, 1280)
+    cap.set(4, 720)
+    validarIdentidad()
+
+
+def validarIdentidad():
+    global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante
+
+    if cap is not None:
+        ret, frame = cap.read()
+
+        frame_save = frame.copy()
+
+        # Redimensionar
+        frame = imutils.resize(frame, width=1280)
+
+        # frame rgb
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Frame show
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        if ret == True:
+            # inferencia de malla facial
+            res = FaceMesh.process(frame_rgb)
+
+            # lista de resultados
+            px = []
+            py = []
+            lista_coordenadas = []
+
+            if res.multi_face_landmarks:
+                # Extraer detecciones de malla facial
+                for rostros in res.multi_face_landmarks:
+                    # dibujamos malla facial
+                    mp_draw.draw_landmarks(frame, rostros, face_mesh_object.FACEMESH_CONTOURS, config_draw,
+                                           config_draw)  # Tambien puede ser FACEMESH_TESSELATION
+
+                    # Extraemos los puntos
+                    for id, puntos in enumerate(rostros.landmark):
+                        # info img
+                        alto, ancho, c = frame.shape
+                        x, y = int(puntos.x * ancho), int(puntos.y * alto)
+                        px.append(x)
+                        py.append(y)
+                        lista_coordenadas.append([id, x, y])
+                        # puntos clave: los de las cejas, los de la cien, asi sabemos si esta mirando de frente o no, me quede en 1:20
+                        # 468 KeyPoints
+                        if len(lista_coordenadas) == 468:
+                            # ojo derecho
+                            x1, y1 = lista_coordenadas[145][1:]
+                            x2, y2 = lista_coordenadas[159][1:]
+                            longitud1 = math.hypot(x2 - x1, y2 - y1)
+
+                            # ojo izq
+                            x3, y3 = lista_coordenadas[374][1:]
+                            x4, y4 = lista_coordenadas[386][1:]
+                            longitud2 = math.hypot(x4 - x3, y4 - y3)
+
+                            # parietal derecho
+                            x5, y5 = lista_coordenadas[139][1:]
+
+                            # parietal izq
+                            x6, y6 = lista_coordenadas[368][1:]
+
+                            # ceja derecha
+                            x7, y7 = lista_coordenadas[70][1:]
+
+                            # ceja izq
+                            x8, y8 = lista_coordenadas[300][1:]
+
+                            # deteccion de rostros
+                            faces = detector.process(frame_rgb)
+
+                            if faces.detections is not None:
+                                for face in faces.detections:
+                                    # Bbox: recuadro del rostros - "ID, BBOX, SCORE
+                                    score = face.score
+                                    score = score[0]
+                                    bbox = face.location_data.relative_bounding_box
+
+                                    # Threshold
+                                    if score > conf_threshold:
+                                        # convertir a pixeles
+                                        xi, yi, anch, alt = bbox.xmin, bbox.ymin, bbox.width, bbox.height
+                                        xi, yi, anch, alt = int(xi * ancho), int(yi * alto), int(anch * ancho), int(
+                                            alt * alto)
+
+                                        # Offset X
+                                        offset_anch = (offset_x / 100) * anch
+                                        xi = int(xi - int(offset_anch / 2))
+                                        anch = int(anch + offset_anch)
+                                        xf = xi + anch
+
+                                        # Offset Y
+                                        offset_alt = (offset_y / 100) * alt
+                                        yi = int(yi - offset_alt)
+                                        alt = int(alt + offset_alt)
+                                        yf = yi + alt
+
+                                        # Control de error sin rostros
+                                        if xi < 0: xi = 0
+                                        if yi < 0: yi = 0
+                                        if anch < 0: anch = 0
+                                        if alt < 0: alt = 0
+
+                                        # Steps - pasos de verificacion
+                                        if step == 0:
+                                            # Draw
+                                            cv2.rectangle(frame, (xi, yi, anch, alt), (255, 0, 255),
+                                                          2)  # Color del rectangulo
+
+                                            # img step 0
+                                            als0, ans0, c = img_step0.shape
+                                            frame[50:50 + als0, 50:50 + ans0] = img_step0
+                                            # img step 1
+                                            als1, ans1, c = img_step1.shape
+                                            frame[50:50 + als1, 1030:1030 + ans1] = img_step1
+                                            # img step 3
+                                            als2, ans2, c = img_step2.shape
+                                            frame[270:270 + als2, 1030:1030 + ans2] = img_step2
+
+                                            # Aca verificamos que este mirando a la camara
+                                            if x7 > x5 and x8 < x6:  # Estamos mirando hacia el frente
+                                                # img check
+                                                alcheck, ancheck, c = img_check.shape
+                                                frame[165:165 + alcheck, 1105:1105 + ancheck] = img_check
+
+                                                # conteo de parpadeos
+                                                if longitud1 <= 10 and longitud2 <= 10 and parpadeo == False:
+                                                    conteo = conteo + 1
+                                                    parpadeo = True
+                                                elif longitud1 > 10 and longitud2 > 10 and parpadeo == True:
+                                                    parpadeo = False
+
+                                                cv2.putText(frame, f'Parpadeos: {int(conteo)}', (1070, 375),
+                                                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
+
+                                                if conteo >= 3:
+                                                    alcheck, ancheck, c = img_check.shape
+                                                    frame[385:385 + alcheck, 1105:1105 + ancheck] = img_check
+
+                                                    # Open Eyes
+                                                    if longitud1 > 15 and longitud2 > 15:
+                                                        # step 1
+                                                        step = 1
+                                            else:
+                                                conteo = 0
+
+                                        # paso 1
+                                        if step == 1:
+                                            cv2.rectangle(frame, (xi, yi, anch, alt), (0, 255, 0),
+                                                          2)  # Color del rectangulo
+                                            # img check liveness
+                                            alli, anli, c = img_livenesscheck.shape
+                                            frame[50:50 + alli, 50:50 + anli] = img_livenesscheck
+                                            # messagebox.showinfo("Registro", "Registro satisfactorio")
+
+                                            # Find faces
+                                            faces_loc = fr.face_locations(frame_rgb)
+                                            faces_cod = fr.face_encodings(frame_rgb, faces_loc)
+
+                                            for faces_cod, faces_loc in zip(faces_cod, faces_loc):
+                                                # Matching
+                                                Match = fr.compare_faces(face_code, faces_cod)
+
+                                                # Sim
+                                                simi = fr.face_distance(face_code, faces_cod)
+
+                                                # Min
+                                                min = np.argmin(simi)
+
+                                                if Match[min]:
+                                                    # De aca se saca el id que hace match
+                                                    cod_estudiante = clases[min].upper()
+                                                    profile() # aca mandarias el websocket, para la validacion en back, para ello necesitamos el endpoint
+
+                                                # print(user_name)
+
+                                    close = pantalla3.protocol("WM_DELETE_WINDOW", closeWindow2)
+                                    # pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
+
+                                    # Circle - Solo es de prueba
+                            # cv2.circle(frame, (x1, y1), 2, (255, 0, 0), cv2.FILLED)
+                            # cv2.circle(frame, (x2, y2), 2, (255, 0, 0), cv2.FILLED)
+
+        # Convertir el video
+        im = Image.fromarray(frame)
+        img = ImageTk.PhotoImage(image=im)
+
+        # Mostrar el video
+        lblVideo.configure(image=img)
+        lblVideo.image = img
+        lblVideo.after(5, validarIdentidad)
+    else:
+        cap.release()
+
+
+def profile():
+    global step, conteo, user_name, OUT_FOLDER_PATH_USERS, cod_estudiante
+
+    # Reset variables
+    step = 0
+    conteo = 0
+
+    # pantalla4
+    pantalla4 = Toplevel(pantalla)
+    pantalla4.title("Kikness | Perfil")
+    pantalla4.geometry("1280x720")
+
+    # Fondo
+    # imagenbc = PhotoImage(file="C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Back2.png")
+    # bc = Label(image=imagenbc, text="Perfil")
+    # bc.place(x=0, y=0, relheight=1, relwidth=1)
+
+    # File
+    user_file = open(f"{OUT_FOLDER_PATH_USERS}/{cod_estudiante}.txt", "r")
+    info_user = user_file.read().split(',')
+    cod_user, name_user, last_user, profesion = info_user[:4]
+
+    print(cod_user, name_user, last_user, profesion)
+
+    # check user
+    if cod_user in clases:
+        texto1 = Label(pantalla4, text=f"Bienvenido {name_user.upper()} {last_user.upper()}")
+        texto1.place(x=580, y=50)
+
+        lbl_image = Label(pantalla4)
+        lbl_image.place(x=490, y=80)
+
+        img_user = cv2.imread(f"{OUT_FOLDER_PATH_FACES}/{cod_user}.png")
+        img_user = cv2.cvtColor(img_user, cv2.COLOR_RGB2BGR)  # fijate en la conversion de color
+        img_user = Image.fromarray(img_user)
+
+        IMG = ImageTk.PhotoImage(image=img_user)
+
+        lbl_image.configure(image=IMG)
+        lbl_image.image = IMG
 
 
 # Nuesto sistema tendra codEstudiante, nombreEstudiante, carrera
