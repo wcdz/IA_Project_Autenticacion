@@ -44,6 +44,7 @@ def closeWindow2():
 def createEstudiante():
     # Agregar un regex para validar el codigo de estudiante
     global cod_estudiante, nom_estudiante, ape_estudiante, carrera, cap, lblVideo, pantalla2
+    global x, y
     cod_estudiante = input_cod_estudiante_reg.get()
     nom_estudiante = input_nom_estudiante_reg.get()
     ape_estudiante = input_ape_estudiante_reg.get()
@@ -86,9 +87,9 @@ def createEstudiante():
         f = open(f"{OUT_FOLDER_PATH_USERS}/{cod_estudiante}.txt", "w")
         f.write(f"{cod_estudiante},{nom_estudiante},{ape_estudiante},{carrera}")
         f.close()
-        print("Registro exitoso")
+        print(f"LOG: Registro exitoso {cod_estudiante}")
     except:
-        print("Error en el registro de un estudiante")
+        print(f"LOG: Error en el registro de un estudiante")
 
     # Limpiar los campos
     input_cod_estudiante_reg.delete(0, END)
@@ -100,6 +101,9 @@ def createEstudiante():
     pantalla2 = Toplevel(pantalla)
     pantalla2.title("Kikness | Registro Biometrico")
     pantalla2.geometry("1280x720")
+    pantalla2.resizable(False, False)
+    pantalla2.geometry(f"1280x720+{x}+{y}")
+
     # Creamos el label de video, osea usaremos nuestra camara
     lblVideo = Label(pantalla2)
     lblVideo.place(x=0, y=0)
@@ -233,7 +237,7 @@ def registroBiometrico():
                                             if x7 > x5 and x8 < x6:  # Estamos mirando hacia el frente
                                                 # img check
                                                 alcheck, ancheck, c = img_check.shape
-                                                frame[165:165 + alcheck, 1105:1105 + ancheck] = img_check
+                                                frame[155:155 + alcheck, 1105:1105 + ancheck] = img_check
 
                                                 # conteo de parpadeos
                                                 if longitud1 <= 10 and longitud2 <= 10 and parpadeo == False:
@@ -242,8 +246,8 @@ def registroBiometrico():
                                                 elif longitud1 > 10 and longitud2 > 10 and parpadeo == True:
                                                     parpadeo = False
 
-                                                cv2.putText(frame, f'Parpadeos: {int(conteo)}', (1070, 375),
-                                                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
+                                                cv2.putText(frame, f'Parpadeos: {int(conteo)}', (1070, 370),
+                                                            0, 0.5, (0, 0, 0), 1)  # cv2.FONT_HERSHEY_COMPLEX
 
                                                 if conteo >= 3:
                                                     alcheck, ancheck, c = img_check.shape
@@ -293,6 +297,7 @@ def registroBiometrico():
 # Funcion MVP
 def lanzarMVP():
     global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images
+    global x, y
 
     # DB Faces
     images = []
@@ -316,6 +321,8 @@ def lanzarMVP():
     pantalla3 = Toplevel(pantalla)
     pantalla3.title("Kikness | Control de acceso")
     pantalla3.geometry("1280x720")
+    pantalla3.resizable(False, False)
+    pantalla3.geometry(f"1280x720+{x}+{y}")
 
     # nuevo lbl de video
     lblVideo = Label(pantalla3)
@@ -330,7 +337,7 @@ def lanzarMVP():
 
 def validarIdentidad():
     global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante
-
+    z = 0
     if cap is not None:
         ret, frame = cap.read()
 
@@ -436,8 +443,8 @@ def validarIdentidad():
                                                           2)  # Color del rectangulo
 
                                             # img step 0
-                                            als0, ans0, c = img_step0.shape
-                                            frame[50:50 + als0, 50:50 + ans0] = img_step0
+                                            als0, ans0, c = img_step.shape
+                                            frame[50:50 + als0, 50:50 + ans0] = img_step
                                             # img step 1
                                             als1, ans1, c = img_step1.shape
                                             frame[50:50 + als1, 1030:1030 + ans1] = img_step1
@@ -449,7 +456,7 @@ def validarIdentidad():
                                             if x7 > x5 and x8 < x6:  # Estamos mirando hacia el frente
                                                 # img check
                                                 alcheck, ancheck, c = img_check.shape
-                                                frame[165:165 + alcheck, 1105:1105 + ancheck] = img_check
+                                                frame[155:155 + alcheck, 1105:1105 + ancheck] = img_check
 
                                                 # conteo de parpadeos
                                                 if longitud1 <= 10 and longitud2 <= 10 and parpadeo == False:
@@ -458,8 +465,8 @@ def validarIdentidad():
                                                 elif longitud1 > 10 and longitud2 > 10 and parpadeo == True:
                                                     parpadeo = False
 
-                                                cv2.putText(frame, f'Parpadeos: {int(conteo)}', (1070, 375),
-                                                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
+                                                cv2.putText(frame, f'Parpadeos: {int(conteo)}', (1070, 370),
+                                                            0, 0.5, (0, 0, 0), 1)  # cv2.FONT_HERSHEY_COMPLEX
 
                                                 if conteo >= 3:
                                                     alcheck, ancheck, c = img_check.shape
@@ -476,9 +483,9 @@ def validarIdentidad():
                                         if step == 1:
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (0, 255, 0),
                                                           2)  # Color del rectangulo
-                                            # img check liveness
-                                            alli, anli, c = img_livenesscheck.shape
-                                            frame[50:50 + alli, 50:50 + anli] = img_livenesscheck
+                                            # img check liveness - ESTO YA NO SIRVE
+                                            # alli, anli, c = img_step2.shape
+                                            # frame[50:50 + alli, 50:50 + anli] = img_step2
                                             # messagebox.showinfo("Registro", "Registro satisfactorio")
 
                                             # Find faces
@@ -495,14 +502,17 @@ def validarIdentidad():
                                                 # Min
                                                 min = np.argmin(simi)
 
+                                                z = 0
                                                 if Match[min]:
                                                     # De aca se saca el id que hace match
                                                     cod_estudiante = clases[min].upper()
-                                                    profile() # aca mandarias el websocket, para la validacion en back, para ello necesitamos el endpoint
+                                                    profile()  # aca mandarias el websocket, para la validacion en back, para ello necesitamos el endpoint
+                                                    # pantalla3.destroy()
+                                                    z = 1
 
                                                 # print(user_name)
 
-                                    close = pantalla3.protocol("WM_DELETE_WINDOW", closeWindow2)
+                                    # close = pantalla3.protocol("WM_DELETE_WINDOW", closeWindow2)
                                     # pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
 
                                     # Circle - Solo es de prueba
@@ -517,12 +527,14 @@ def validarIdentidad():
         lblVideo.configure(image=img)
         lblVideo.image = img
         lblVideo.after(5, validarIdentidad)
+        if z == 1: closeWindow2()
     else:
         cap.release()
 
 
 def profile():
     global step, conteo, user_name, OUT_FOLDER_PATH_USERS, cod_estudiante
+    global x, y
 
     # Reset variables
     step = 0
@@ -532,30 +544,44 @@ def profile():
     pantalla4 = Toplevel(pantalla)
     pantalla4.title("Kikness | Perfil")
     pantalla4.geometry("1280x720")
+    pantalla4.resizable(False, False)
+    pantalla4.geometry(f"1280x720+{x}+{y}")
 
     # Fondo
-    # imagenbc = PhotoImage(file="C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Back2.png")
-    # bc = Label(image=imagenbc, text="Perfil")
-    # bc.place(x=0, y=0, relheight=1, relwidth=1)
+    bc = Label(pantalla4, image=imagenbc, text="Perfil")
+    bc.place(x=0, y=0, relheight=1, relwidth=1)
 
     # File
     user_file = open(f"{OUT_FOLDER_PATH_USERS}/{cod_estudiante}.txt", "r")
     info_user = user_file.read().split(',')
-    cod_user, name_user, last_user, profesion = info_user[:4]
+    cod_user, name_user, last_user, facultad = info_user[:4]
 
-    print(cod_user, name_user, last_user, profesion)
+    print(f"LOG: Ingreso {cod_user} {name_user} {last_user} {facultad}")
 
     # check user
     if cod_user in clases:
-        texto1 = Label(pantalla4, text=f"Bienvenido {name_user.upper()} {last_user.upper()}")
-        texto1.place(x=580, y=50)
+        codigo_estudiante = Label(pantalla4, text=f"{cod_user}", font=("Arial", 15, "bold"),
+                                  bg="white")  # Cambiar el tamaño, negrita y fuente
+        codigo_estudiante.place(x=850, y=233)
+        nombres_estudiante = Label(pantalla4, text=f"{name_user}", font=("Arial", 15, "bold"), bg="white")
+        nombres_estudiante.place(x=850, y=305)
+        apellidos_estudiante = Label(pantalla4, text=f"{last_user}", font=("Arial", 15, "bold"), bg="white")
+        apellidos_estudiante.place(x=850, y=380)
+        facultad = Label(pantalla4, text=f"{facultad}", font=("Arial", 15, "bold"), bg="white")
+        facultad.place(x=850, y=455)
 
-        lbl_image = Label(pantalla4)
-        lbl_image.place(x=490, y=80)
+        # Profile photo - saldremos feos, ya que no estoy registrando foto de presentacion
+        lbl_image = Label(pantalla4, bg="white")
+        lbl_image.place(x=200, y=200)
 
+        # OUT_FOLDER_PATH_FACES OUT_FOLDER_PATH_PROFILES
         img_user = cv2.imread(f"{OUT_FOLDER_PATH_FACES}/{cod_user}.png")
         img_user = cv2.cvtColor(img_user, cv2.COLOR_RGB2BGR)  # fijate en la conversion de color
         img_user = Image.fromarray(img_user)
+
+        nuevo_ancho = 300  # Nuevo ancho deseado
+        nuevo_alto = 340  # Nuevo alto deseado
+        img_user = img_user.resize((nuevo_ancho, nuevo_alto))
 
         IMG = ImageTk.PhotoImage(image=img_user)
 
@@ -571,13 +597,22 @@ load_dotenv()
 OUT_FOLDER_PATH_USERS = os.getenv("PATH_USERS")
 PATH_USER_CHECK = os.getenv("PATH_USERS_CHECK")
 OUT_FOLDER_PATH_FACES = os.getenv("PATH_FACES")
+OUT_FOLDER_PATH_PROFILES = 'C:/Users/willi/Desktop/IA_Project_Autenticacion/database/profiles'
 
 # Read Img
 img_check = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/check.png')
-img_step0 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Step0.png')
-img_step1 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Step1.png')
-img_step2 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Step2.png')
-img_livenesscheck = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/LivenessCheck.png')
+img_check = cv2.cvtColor(img_check, cv2.COLOR_RGB2BGR)
+img_step = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/mvp.png')  # mvp
+img_step = cv2.cvtColor(img_step, cv2.COLOR_RGB2BGR)
+img_step0 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso0.png')  # Step 0
+img_step0 = cv2.cvtColor(img_step0, cv2.COLOR_RGB2BGR)
+img_step1 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso1.png')  # Step 1
+img_step1 = cv2.cvtColor(img_step1, cv2.COLOR_RGB2BGR)
+img_step2 = cv2.imread('C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Paso2.png')  # Step 2
+img_step2 = cv2.cvtColor(img_step2, cv2.COLOR_RGB2BGR)
+img_livenesscheck = cv2.imread(
+    'C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Livenesscheck1.png')  # LivenessCheck
+img_livenesscheck = cv2.cvtColor(img_livenesscheck, cv2.COLOR_RGB2BGR)
 
 # Variables
 parpadeo = False
@@ -614,10 +649,23 @@ pantalla.configure(bg="white")
 pantalla.geometry("1280x720")
 pantalla.resizable(False, False)
 
+# Obtiene el ancho y alto de la pantalla
+ancho_pantalla = pantalla.winfo_screenwidth()
+alto_pantalla = pantalla.winfo_screenheight()
+# Calcula las coordenadas para centrar la ventana en la pantalla
+x = (ancho_pantalla - 1280) // 2  # 1280 es el ancho de la ventana
+y = (alto_pantalla - 720) // 2  # 720 es la altura de la ventana
+
+# Establece la ubicación de la ventana en el centro de la pantalla
+pantalla.geometry(f"1280x720+{x}+{y}")
+
 # Background
 img_background = PhotoImage(file=os.getenv("PATH_BACKGROUND"))
 background = Label(image=img_background, text="Inicio")
 background.place(x=0, y=0, relheight=1, relwidth=1)
+
+# Profile Background
+imagenbc = PhotoImage(file="C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/Perfil.png")
 
 # Manejo de inputs de registro (codEstudiante, nombreEstudiante, profesion)
 # codEstudiante
@@ -634,7 +682,8 @@ input_ape_estudiante_reg.place(x=80, y=440)
 
 # carreraEstudiante
 opcion_seleccionada = StringVar()  # Obtener el valor en string
-opciones = ["", "Ing. Software", "Ing. Industrial", "Ing. Civil", "Administración"]
+opciones = ["", "Arquitectura", "Ciencias de la Salud", "Comunicaciones", "Derecho", "Educación", "Ingeniería",
+            "Negocios", "Psicología"]
 opcion_seleccionada.set("Seleccione la carrera")
 select = OptionMenu(pantalla, opcion_seleccionada, *opciones)
 select.pack()
