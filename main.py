@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 import imutils
 import math
 import re
+import datetime as dt
 
 
 def codeFace(images):
@@ -87,9 +88,9 @@ def createEstudiante():
         f = open(f"{OUT_FOLDER_PATH_USERS}/{cod_estudiante}.txt", "w")
         f.write(f"{cod_estudiante},{nom_estudiante},{ape_estudiante},{carrera}")
         f.close()
-        print(f"LOG: Registro exitoso {cod_estudiante}")
+        print(f"LOG: Registro exitoso {cod_estudiante} -> {dt.datetime.now()}")
     except:
-        print(f"LOG: Error en el registro de un estudiante")
+        print(f"LOG: Error en el registro de un estudiante -> {dt.datetime.now()}")
 
     # Limpiar los campos
     input_cod_estudiante_reg.delete(0, END)
@@ -503,12 +504,20 @@ def validarIdentidad():
                                                 min = np.argmin(simi)
 
                                                 z = 0
+                                                print(Match[min])
                                                 if Match[min]:
                                                     # De aca se saca el id que hace match
                                                     cod_estudiante = clases[min].upper()
                                                     profile()  # aca mandarias el websocket, para la validacion en back, para ello necesitamos el endpoint
                                                     # pantalla3.destroy()
                                                     z = 1
+                                                else:
+                                                    print(
+                                                        f"LOG: No hay patron de reconocimiento, posible intento de suplantación -> {dt.datetime.now()}")
+                                                    messagebox.showinfo("Acceso denegado",
+                                                                        "Posible intento de suplantación")
+                                                    closeWindow2()
+                                                    return
 
                                                 # print(user_name)
 
@@ -556,7 +565,7 @@ def profile():
     info_user = user_file.read().split(',')
     cod_user, name_user, last_user, facultad = info_user[:4]
 
-    print(f"LOG: Ingreso {cod_user} {name_user} {last_user} {facultad}")
+    print(f"LOG: Ingreso {cod_user} {name_user} {last_user} -> {dt.datetime.now()}")
 
     # check user
     if cod_user in clases:
@@ -575,7 +584,9 @@ def profile():
         lbl_image.place(x=200, y=200)
 
         # OUT_FOLDER_PATH_FACES OUT_FOLDER_PATH_PROFILES
-        img_user = cv2.imread(f"{OUT_FOLDER_PATH_FACES}/{cod_user}.png")
+        # rostro = OUT_FOLDER_PATH_FACES # Original path
+        rostro = OUT_FOLDER_PATH_PROFILES
+        img_user = cv2.imread(f"{rostro}/{cod_user}.png")
         img_user = cv2.cvtColor(img_user, cv2.COLOR_RGB2BGR)  # fijate en la conversion de color
         img_user = Image.fromarray(img_user)
 
