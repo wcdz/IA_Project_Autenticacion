@@ -11,6 +11,7 @@ import imutils
 import math
 import re
 import datetime as dt
+from ultralytics import YOLO
 
 
 def codeFace(images):
@@ -39,6 +40,43 @@ def closeWindow2():
     step = 0
     conteo = 0
     pantalla3.destroy()
+
+
+# Object detect
+def objectDetect(img):
+    global glass, hat
+    glass = False
+    hat = False
+    frame = img
+
+    # Clases
+    class_name_cap = ['Gafas', 'Gorras', 'Casaca', 'Polo', 'Pantalones', 'Shorts', 'Falda', 'Vestido', 'Mochila',
+                      'Zapatos']
+
+    # Inferencia
+    resultsCap = model_glass_hat(frame, stream=True, imgsz=640)
+    resultsGlass = model_glass(frame, stream=True, imgsz=640)
+
+    def process_results(results, target_cls, flag):
+        for res in results:
+            for box in res.boxes:
+                xi, yi, xf, yf = [int(max(0, coord)) for coord in box.xyxy[0]]
+
+                cls = int(box.cls[0])
+                conf = math.ceil(box.conf[0])
+
+                if cls == target_cls:
+                    flag = True
+                    cv2.rectangle(frame, (xi, yi), (xf, yf), (255, 255, 255, 0), 2)
+                    cv2.putText(frame, f"{class_name_cap[cls]} {int(conf * 100)}%", (xi, yi - 20),
+                                cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255, 0), 2)
+
+        return flag
+
+    hat = process_results(resultsCap, 1, hat)
+    glass = process_results(resultsGlass, 0, glass)
+
+    return frame
 
 
 # Funcion LOG
@@ -133,10 +171,14 @@ def registroBiometrico():
 
         # Frame show
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_object_detect = frame.copy()
 
         if ret == True:
             # inferencia de malla facial
             res = FaceMesh.process(frame_rgb)
+
+            # Object detect
+            # frame = objectDetect(frame_object_detect)
 
             # lista de resultados
             px = []
@@ -220,6 +262,7 @@ def registroBiometrico():
 
                                         # Steps - pasos de verificacion
                                         if step == 0:
+                                            # and glass == False and hat == False):
                                             # Draw
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (255, 0, 255),
                                                           2)  # Color del rectangulo
@@ -269,12 +312,23 @@ def registroBiometrico():
 
                                         # paso 1
                                         if step == 1:
+                                            # and glass == False and hat == False):
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (0, 255, 0),
                                                           2)  # Color del rectangulo
                                             # img check liveness
                                             alli, anli, c = img_livenesscheck.shape
                                             frame[50:50 + alli, 50:50 + anli] = img_livenesscheck
                                             # messagebox.showinfo("Registro", "Registro satisfactorio")
+
+                                        '''if glass == True:
+                                            # Img glasses
+                                            al_glass, an_glass = img_glass.shape
+                                            frame[50:50 + al_glass, 50:50 + an_glass] = img_glass
+
+                                        if hat == True:
+                                            # Img glasses
+                                            al_hat, an_hat = img_hat.shape
+                                            frame[50:50 + al_hat, 50:50 + an_hat] = img_hat'''
 
                                     close = pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
                                     # pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
@@ -352,10 +406,14 @@ def validarIdentidad():
 
         # Frame show
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_object_detect = frame.copy()
 
         if ret == True:
             # inferencia de malla facial
             res = FaceMesh.process(frame_rgb)
+
+            # Object detect
+            # frame = objectDetect(frame_object_detect)
 
             # lista de resultados
             px = []
@@ -439,6 +497,8 @@ def validarIdentidad():
 
                                         # Steps - pasos de verificacion
                                         if step == 0:
+                                            # and glass == False and hat == False)\
+
                                             # Draw
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (255, 0, 255),
                                                           2)  # Color del rectangulo
@@ -482,6 +542,7 @@ def validarIdentidad():
 
                                         # paso 1
                                         if step == 1:
+                                            # and glass == False and hat == False):
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (0, 255, 0),
                                                           2)  # Color del rectangulo
                                             # img check liveness - ESTO YA NO SIRVE
@@ -519,7 +580,17 @@ def validarIdentidad():
                                                     closeWindow2()
                                                     return
 
-                                                # print(user_name)
+                                        '''if glass == True:
+                                            # Img glasses
+                                            al_glass, an_glass, c = img_glass.shape
+                                            frame[50:50 + al_glass, 50:50 + an_glass] = img_glass
+
+                                        if hat == True:
+                                            # Img glasses
+                                            al_hat, an_hat, c = img_hat.shape
+                                            frame[50:50 + al_hat, 50:50 + an_hat] = img_hat'''
+
+                                        # print(user_name)
 
                                     # close = pantalla3.protocol("WM_DELETE_WINDOW", closeWindow2)
                                     # pantalla2.protocol("WM_DELETE_WINDOW", closeWindow)
@@ -610,6 +681,10 @@ PATH_USER_CHECK = os.getenv("PATH_USERS_CHECK")
 OUT_FOLDER_PATH_FACES = os.getenv("PATH_FACES")
 OUT_FOLDER_PATH_PROFILES = os.getenv("PATH_PROFILES")
 
+# Modelos
+model_glass_hat = YOLO('modelos/ModeloGafasGorras.pt')
+model_glass = YOLO('modelos/ModeloGafas.pt')
+
 # Read Img
 img_check = cv2.imread(os.getenv("PATH_ICON_CHECK"))
 img_check = cv2.cvtColor(img_check, cv2.COLOR_RGB2BGR)
@@ -623,6 +698,8 @@ img_step2 = cv2.imread(os.getenv("PATH_ICON_STEP2"))  # Step 2
 img_step2 = cv2.cvtColor(img_step2, cv2.COLOR_RGB2BGR)
 img_livenesscheck = cv2.imread(os.getenv("PATH_LIVENESS_CHECK"))  # LivenessCheck
 img_livenesscheck = cv2.cvtColor(img_livenesscheck, cv2.COLOR_RGB2BGR)
+img_glass = cv2.imread("C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/glases.png")
+img_hat = cv2.imread("C:/Users/willi/Desktop/IA_Project_Autenticacion/assets/cap.png")
 
 # Variables
 parpadeo = False
