@@ -12,6 +12,10 @@ import math
 import re
 import datetime as dt
 from ultralytics import YOLO
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
 
 def codeFace(images):
@@ -391,7 +395,7 @@ def lanzarMVP():
 
 
 def validarIdentidad():
-    global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante
+    global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante, OUT_FOLDER_PATH_FACES_INTRUSOS
     z = 0
     if cap is not None:
         ret, frame = cap.read()
@@ -573,11 +577,19 @@ def validarIdentidad():
                                                     # pantalla3.destroy()
                                                     z = 1
                                                 else:
+                                                    # cut
+                                                    cut = frame_save[yi:yf, xi:xf]
+                                                    # guardamos el rostro
+                                                    timestamp = dt.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                                                    cv2.imwrite(
+                                                        f"{OUT_FOLDER_PATH_FACES_INTRUSOS}/intruso_{timestamp}.png",
+                                                        cut)
                                                     print(
                                                         f"LOG: No hay patron de reconocimiento, posible intento de suplantación -> {dt.datetime.now()}")
                                                     messagebox.showinfo("Acceso denegado",
                                                                         "Posible intento de suplantación")
                                                     closeWindow2()
+                                                    alerta_intruso(timestamp)
                                                     return
 
                                         '''if glass == True:
@@ -671,6 +683,42 @@ def profile():
         lbl_image.image = IMG
 
 
+def alerta_intruso(timestamp):
+    global OUT_FOLDER_PATH_FACES_INTRUSOS
+    email_address = 'chavezdiaz4@gmail.com'
+    recipient_emails = ', '.join(['chavezdiaz4@gmail.com', 'kikness_test@yopmail.com'])
+    try:
+        # Configurar el mensaje
+        msg = MIMEMultipart()
+        msg['From'] = email_address
+        msg['To'] = recipient_emails  # Concatena los correos con comas
+        msg['Subject'] = 'Alerta posibe suplantación de identidad'
+
+        # Agregar el cuerpo del mensaje
+        msg.attach(MIMEText(
+            f'No hay patron de reconocimiento, posible intento de suplantación -> {dt.datetime.now()}\nPor favor, acercarse a verificar a la puerta de ingreso de la universidad.',
+            'plain'))
+
+        # Adjuntar la imagen
+        img_path = f"{OUT_FOLDER_PATH_FACES_INTRUSOS}intruso_{timestamp}.png"  # Ruta de la imagen que quieres adjuntar
+        with open(img_path, 'rb') as img_file:
+            img = MIMEImage(img_file.read())
+            img.add_header('Content-Disposition', 'attachment', filename=os.path.basename(img_path))
+            msg.attach(img)
+
+        # Conectar al servidor SMTP
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(email_address, os.getenv("PASS"))
+        text = msg.as_string()
+        server.sendmail(email_address, recipient_emails, text)
+        print('¡Correo enviado correctamente!')
+    except Exception as e:
+        print('Error al enviar el correo:', e)
+    finally:
+        server.quit()
+
+
 # Nuesto sistema tendra codEstudiante, nombreEstudiante, carrera
 
 # Cargar variables de entorno
@@ -680,6 +728,7 @@ OUT_FOLDER_PATH_USERS = os.getenv("PATH_USERS")
 PATH_USER_CHECK = os.getenv("PATH_USERS_CHECK")
 OUT_FOLDER_PATH_FACES = os.getenv("PATH_FACES")
 OUT_FOLDER_PATH_PROFILES = os.getenv("PATH_PROFILES")
+OUT_FOLDER_PATH_FACES_INTRUSOS = os.getenv("PATH_FACES_INTRUSOS")
 
 # Modelos
 model_glass_hat = YOLO('modelos/ModeloGafasGorras.pt')
