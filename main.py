@@ -16,6 +16,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+import random
+import pandas as pd
 
 
 def codeFace(images):
@@ -573,8 +575,11 @@ def validarIdentidad():
                                                 if Match[min]:
                                                     # De aca se saca el id que hace match
                                                     cod_estudiante = clases[min].upper()
+                                                    print(clases[min])
+                                                    timestamp = dt.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                                                    escribir_acceso_excel(cod_estudiante, timestamp)
+                                                    closeWindow2()
                                                     profile()  # aca mandarias el websocket, para la validacion en back, para ello necesitamos el endpoint
-                                                    # pantalla3.destroy()
                                                     z = 1
                                                 else:
                                                     # cut
@@ -589,7 +594,10 @@ def validarIdentidad():
                                                     messagebox.showinfo("Acceso denegado",
                                                                         "Posible intento de suplantación")
                                                     closeWindow2()
-                                                    alerta_intruso(timestamp)
+                                                    torre = random.choice(['A', 'B'])
+                                                    lectora = random.randint(1, 2)
+                                                    escribir_intrusos_excel(torre, lectora, timestamp)
+                                                    alerta_intruso(torre, lectora, timestamp)
                                                     return
 
                                         '''if glass == True:
@@ -683,7 +691,7 @@ def profile():
         lbl_image.image = IMG
 
 
-def alerta_intruso(timestamp):
+def alerta_intruso(torre, lectora, timestamp):
     global OUT_FOLDER_PATH_FACES_INTRUSOS
     email_address = 'chavezdiaz4@gmail.com'
     recipient_emails = ', '.join(['chavezdiaz4@gmail.com', 'kikness_test@yopmail.com'])
@@ -692,12 +700,49 @@ def alerta_intruso(timestamp):
         msg = MIMEMultipart()
         msg['From'] = email_address
         msg['To'] = recipient_emails  # Concatena los correos con comas
-        msg['Subject'] = 'Alerta posibe suplantación de identidad'
+        msg['Subject'] = 'Alerta posible suplantación de identidad'
+
+        fecha_hora = dt.datetime.strptime(timestamp, "%Y_%m_%d_%H_%M_%S")
+        fecha = fecha_hora.strftime("%Y-%m-%d")
+        hora = fecha_hora.strftime("%H:%M:%S")
+
+        # Crear el contenido HTML personalizado
+        # HTML con estilos en línea para la negrita del detalle
+        html = f"""
+            <html>
+                <head>
+                    <style>
+                        .bold-text {{
+                            font-weight: bold;
+                        }}
+                    </style>
+                </head>
+                <body style="background-color: white; color: black; font-family: Arial, sans-serif;">
+                    <div style="background-color: #00C434; padding: 20px;">
+                        <h1 style="color: white;">Kikness | One trait at a time</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p>Estimado usuario,</p>
+                        <p>Se ha detectado un intento de Suplantación de identidad.</p>
+                        <p class="bold-text">Detalles:</p>
+                        <p><span class="bold-text">Torre:</span> {torre}</p>
+                        <p><span class="bold-text">Lectora:</span> {lectora}</p>
+                        <p><span class="bold-text">Fecha:</span> {fecha}</p>
+                        <p><span class="bold-text">Hora:</span> {hora}</p>
+                    </div>
+                    <div style="background-color: #00C434; color: white; padding: 10px; display: flex; justify-content: space-between;">
+                        <div>© AI 2023</div>
+                    </div>
+                </body>
+            </html>
+        """
 
         # Agregar el cuerpo del mensaje
-        msg.attach(MIMEText(
-            f'No hay patron de reconocimiento, posible intento de suplantación -> {dt.datetime.now()}\nPor favor, acercarse a verificar a la puerta de ingreso de la universidad.',
-            'plain'))
+        # msg.attach(MIMEText(
+        #   f'No hay patron de reconocimiento, posible intento de suplantación -> {dt.datetime.now()}\nPor favor, acercarse a verificar a la puerta de ingreso de la universidad.',
+        #  'plain'))
+
+        msg.attach(MIMEText(html, 'html'))
 
         # Adjuntar la imagen
         img_path = f"{OUT_FOLDER_PATH_FACES_INTRUSOS}intruso_{timestamp}.png"  # Ruta de la imagen que quieres adjuntar
@@ -717,6 +762,75 @@ def alerta_intruso(timestamp):
         print('Error al enviar el correo:', e)
     finally:
         server.quit()
+
+
+def escribir_acceso_excel(cod_estudiante, timestamp):
+    ruta_guardado = 'C:/Users/willi/Desktop/IA_Project_Autenticacion/database/reports/control_accesos.xlsx'
+
+    fecha_hora = dt.datetime.strptime(timestamp, "%Y_%m_%d_%H_%M_%S")
+    fecha_acceso = fecha_hora.strftime("%Y-%m-%d")
+    hora_acceso = fecha_hora.strftime("%H:%M:%S")
+
+    user_file = open(f"{OUT_FOLDER_PATH_USERS}/{cod_estudiante}.txt", "r")
+    info_user = user_file.read().split(',')
+    cod_user, name_user, last_user, facultad = info_user[:4]
+
+    # Crear un diccionario con los datos recibidos
+    data = {
+        'cod_estudiante': [cod_estudiante],
+        'nombres': [name_user],
+        'apellidos': [last_user],
+        'facultad': [facultad],
+        'hora_acceso': [hora_acceso],
+        'fecha_acceso': [fecha_acceso]
+    }
+
+    # Intentar cargar el archivo existente o crear uno nuevo si no existe
+    try:
+        # Si el archivo existe, cargarlo en un DataFrame
+        df = pd.read_excel(ruta_guardado)
+        # Crear un DataFrame con los nuevos datos
+        nuevo_registro = pd.DataFrame(data)
+        # Agregar nuevos datos al DataFrame existente
+        df = pd.concat([df, nuevo_registro], ignore_index=True)
+    except FileNotFoundError:
+        # Si el archivo no existe, crear uno nuevo con los datos
+        df = pd.DataFrame(data)
+
+    # Escribir los datos en el archivo Excel en la ruta proporcionada
+    df.to_excel(ruta_guardado, index=False)
+
+
+def escribir_intrusos_excel(torre, lectora, timestamp):
+    ruta_guardado = 'C:/Users/willi/Desktop/IA_Project_Autenticacion/database/reports/control_intrusos.xlsx'
+
+    fecha_hora = dt.datetime.strptime(timestamp, "%Y_%m_%d_%H_%M_%S")
+    fecha_acceso = fecha_hora.strftime("%Y-%m-%d")
+    hora_acceso = fecha_hora.strftime("%H:%M:%S")
+
+    # Crear un diccionario con los datos recibidos
+    data = {
+        'cod_registro': [f'{timestamp}_{torre}_{lectora}'],
+        'torre': [torre],
+        'lectora': [lectora],
+        'hora_registro': [hora_acceso],
+        'fecha_registro': [fecha_acceso]
+    }
+
+    # Intentar cargar el archivo existente o crear uno nuevo si no existe
+    try:
+        # Si el archivo existe, cargarlo en un DataFrame
+        df = pd.read_excel(ruta_guardado)
+        # Crear un DataFrame con los nuevos datos
+        nuevo_registro = pd.DataFrame(data)
+        # Agregar nuevos datos al DataFrame existente
+        df = pd.concat([df, nuevo_registro], ignore_index=True)
+    except FileNotFoundError:
+        # Si el archivo no existe, crear uno nuevo con los datos
+        df = pd.DataFrame(data)
+
+    # Escribir los datos en el archivo Excel en la ruta proporcionada
+    df.to_excel(ruta_guardado, index=False)
 
 
 # Nuesto sistema tendra codEstudiante, nombreEstudiante, carrera
