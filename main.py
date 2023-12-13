@@ -397,7 +397,7 @@ def lanzarMVP():
 
 
 def validarIdentidad():
-    global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante, OUT_FOLDER_PATH_FACES_INTRUSOS
+    global OUT_FOLDER_PATH_FACES, cap, lblVideo, pantalla3, face_code, clases, images, step, parpadeo, conteo, cod_estudiante, OUT_FOLDER_PATH_FACES_INTRUSOS, glass, hat
     z = 0
     if cap is not None:
         ret, frame = cap.read()
@@ -419,7 +419,7 @@ def validarIdentidad():
             res = FaceMesh.process(frame_rgb)
 
             # Object detect
-            # frame = objectDetect(frame_object_detect)
+            frame = objectDetect(frame_object_detect)
 
             # lista de resultados
             px = []
@@ -502,9 +502,7 @@ def validarIdentidad():
                                         if alt < 0: alt = 0
 
                                         # Steps - pasos de verificacion
-                                        if step == 0:
-                                            # and glass == False and hat == False)\
-
+                                        if step == 0 and glass == False and hat == False:
                                             # Draw
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (255, 0, 255),
                                                           2)  # Color del rectangulo
@@ -547,8 +545,7 @@ def validarIdentidad():
                                                 conteo = 0
 
                                         # paso 1
-                                        if step == 1:
-                                            # and glass == False and hat == False):
+                                        if step == 1 and glass == False and hat == False:
                                             cv2.rectangle(frame, (xi, yi, anch, alt), (0, 255, 0),
                                                           2)  # Color del rectangulo
                                             # img check liveness - ESTO YA NO SIRVE
@@ -600,7 +597,7 @@ def validarIdentidad():
                                                     alerta_intruso(torre, lectora, timestamp)
                                                     return
 
-                                        '''if glass == True:
+                                        if glass == True:
                                             # Img glasses
                                             al_glass, an_glass, c = img_glass.shape
                                             frame[50:50 + al_glass, 50:50 + an_glass] = img_glass
@@ -608,7 +605,7 @@ def validarIdentidad():
                                         if hat == True:
                                             # Img glasses
                                             al_hat, an_hat, c = img_hat.shape
-                                            frame[50:50 + al_hat, 50:50 + an_hat] = img_hat'''
+                                            frame[50:50 + al_hat, 50:50 + an_hat] = img_hat
 
                                         # print(user_name)
 
